@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>망미역 근처 원룸 매물 | 채채부동산</title>
+<style>
+  html,body{margin:0;height:100%;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  #map{width:100%;height:100%}
+  .head{position:absolute;top:10px;left:10px;z-index:10;background:#fff;border-radius:10px;padding:8px 12px;
+        box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;font-weight:700}
+  .head small{display:block;font-weight:400;color:#666;font-size:12px;margin-top:2px}
+  .num{width:30px;height:30px;border-radius:50%;background:#1d4ed8;color:#fff;border:2px solid #fff;
+       box-shadow:0 2px 6px rgba(0,0,0,.4);font:700 15px/30px sans-serif;text-align:center;cursor:pointer}
+  .num.on{background:#f59e0b}
+  .stn{transform:translate(-50%,-100%);text-align:center;pointer-events:none}
+  .stn b{display:inline-block;background:#e11d48;color:#fff;font-size:13px;padding:3px 8px;border-radius:6px;
+         box-shadow:0 2px 6px rgba(0,0,0,.3);margin-bottom:2px;white-space:nowrap}
+  .pop{position:relative;left:22px;transform:translateY(-50%);background:#fff;border-radius:10px;padding:12px 14px;
+       width:230px;box-shadow:0 4px 14px rgba(0,0,0,.3);font-size:14px;line-height:1.6;color:#222}
+  .pop .t{font-size:16px;font-weight:700;margin-bottom:2px;padding-right:20px}
+  .pop .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;color:#888;cursor:pointer}
+  .pop .p{color:#1d4ed8;font-weight:700}
+  .pop .ev{color:#dc2626}
+  .pop a{color:#03c75a;font-weight:700;text-decoration:none}
+  .pop .ph{display:block;margin-top:8px;background:#1d4ed8;color:#fff;text-align:center;padding:8px;border-radius:8px}
+  @media (max-width:520px){.pop{left:0;transform:translate(-50%,22px)}}
+  .pop{pointer-events:auto}
+  .pop .ph.no{background:#ccc;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="head">망미역 근처 원룸 매물<small>번호를 누르면 매물 정보가 나와요 · 채채부동산</small></div>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=056033e64623f114f77420f756b6c262&autoload=false"></script>
+<script>
+// 도보 거리: 망미역 가장 가까운 출구까지 OSM 보행 경로(walk.py) · 분 = 거리 ÷ 분당 67m
+const STATION={name:'망미역',lat:35.171528,lng:129.108225};
+const L=[
+ {t:'오케스트라 302호',a:'광안동 1074-17',p:'200/45',s:'공실',ev:true,lat:35.1662510630071,lng:129.11307496128,m:789,min:12,
+  ph:'https://drive.google.com/drive/folders/1E9_O_wphWjFxT03sQk_8x92VPafaISOW'},
+ {t:'수영리치빌 407호',a:'수영동 452-22',p:'300/43',s:'공실',ev:true,lat:35.1695725348173,dx:18,dy:4,lng:129.113647423123,m:474,min:7,
+  ph:'https://drive.google.com/drive/folders/1NsBuoxfdelCX261Ug75G1Re9rWtrSDfh'},
+ {t:'힐그린빌 301호',a:'광안동 1056-26',p:'200/42',s:'공실',ev:true,lat:35.1682981664609,lng:129.109940450692,m:439,min:7,
+  ph:'https://drive.google.com/drive/folders/16XBTrVPlNlpwZq2yDHo4NYzN0_YCJscY'},
+ {t:'삼정시티빌 405호',a:'수영동 453-14',p:'500/40',s:'공실',ev:true,lat:35.1695559858493,dx:-18,dy:6,lng:129.113180908497,m:418,min:6,
+  ph:'https://drive.google.com/drive/folders/1UxzMeB1V2PE43FSJYZ9YsmzSqHY_gkC-'},
+ {t:'세영시티빌 402호',a:'수영동 453-9',p:'500/43',s:'11/15 퇴실',ev:false,lat:35.169953511213,dx:0,dy:-14,lng:129.113437466438,m:440,min:7,
+  ph:'http://redirect.dabangapp.com/cg/bK5b'},
+ {t:'팝스아트빌 1201호',a:'광안동 1077-16',p:'500/40',s:'11/12 퇴실',ev:false,lat:35.1657420785047,lng:129.114134165532,m:813,min:12,
+  ph:'http://redirect.dabangapp.com/cg/bUsL'},
+ {t:'월드제이타운 203호',a:'광안동 1056-12',p:'2000/40',s:'공실',ev:false,lat:35.1678992253408,lng:129.110804021899,m:530,min:8,
+  ph:'https://drive.google.com/drive/folders/1_r88UVksVrbjpDzBLNO4KLp9kyUt1eeV'}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const naver=a=>'https://map.naver.com/p/search/'+encodeURIComponent('부산 수영구 '+a);
+
+kakao.maps.load(()=>{
+  const map=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(35.1685,129.1115),level:4});
+  map.addControl(new kakao.maps.ZoomControl(),kakao.maps.ControlPosition.RIGHT);
+
+  // 망미역 빨간 핀
+  const sp=new kakao.maps.LatLng(STATION.lat,STATION.lng);
+  new kakao.maps.Marker({map,position:sp,zIndex:50,
+    image:new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+      new kakao.maps.Size(44,48),{offset:new kakao.maps.Point(22,48)})});
+  new kakao.maps.CustomOverlay({map,position:sp,yAnchor:0,xAnchor:0,zIndex:51,
+    content:'<div class="stn" style="margin-top:-50px"><b>🚇 망미역 (3호선)</b></div>'});
+
+  const pop=new kakao.maps.CustomOverlay({xAnchor:0,yAnchor:0,zIndex:100,clickable:true});
+  let cur=null;
+  const close=()=>{pop.setMap(null); if(cur) cur.classList.remove('on'); cur=null;};
+  const bounds=new kakao.maps.LatLngBounds(); bounds.extend(sp);
+
+  L.forEach((x,i)=>{
+    const pos=new kakao.maps.LatLng(x.lat,x.lng); bounds.extend(pos);
+    const d=document.createElement('div'); d.className='num'; d.textContent=i+1;
+    // 붙어 있는 2·4·5번 겹침 방지: 화면에서만 살짝 벌림(좌표는 그대로)
+    if(x.dx||x.dy) d.style.transform='translate('+(x.dx||0)+'px,'+(x.dy||0)+'px)';
+    d.addEventListener('click',e=>{
+      e.stopPropagation(); close(); cur=d; d.classList.add('on');
+      const w=document.createElement('div'); w.className='pop';
+      w.innerHTML='<button class="x" aria-label="닫기">×</button>'+
+        '<div class="t">'+(i+1)+'. '+esc(x.t)+'</div>'+
+        '<div>'+esc(x.a)+'</div>'+
+        '<div class="p">'+esc(x.p)+'</div>'+
+        '<div>'+esc(x.s)+'</div>'+
+        (x.ev?'<div class="ev">엘베없음</div>':'')+
+        '<div>망미역 도보 '+x.min+'분, '+x.m+'m</div>'+
+        '<div>네이버지도 바로가기: <a href="'+naver(x.a)+'" target="_blank" rel="noopener">열기</a></div>'+
+        (x.ph?'<a class="ph" href="'+esc(x.ph)+'" target="_blank" rel="noopener">📷 사진 보러가기</a>'
+             :'<span class="ph no">사진 준비 중</span>');
+      w.querySelector('.x').onclick=ev=>{ev.stopPropagation(); close();};
+      ['mousedown','touchstart','click'].forEach(t=>w.addEventListener(t,ev=>ev.stopPropagation()));
+      pop.setContent(w); pop.setPosition(pos); pop.setMap(map);
+      if(w.parentElement) w.parentElement.style.pointerEvents='none';
+      map.panTo(pos);
+    });
+    new kakao.maps.CustomOverlay({map,position:pos,content:d,xAnchor:0.5,yAnchor:0.5,zIndex:60,clickable:true});
+  });
+  kakao.maps.event.addListener(map,'click',close);
+  map.setBounds(bounds,60,40,40,40);
+});
+</script>
+</body>
+</html>
