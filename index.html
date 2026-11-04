@@ -52,6 +52,7 @@ const L=[
  {t:'월드제이타운 203호',a:'광안동 1056-12',p:'2000/40',s:'공실',ev:false,lat:35.1678992253408,lng:129.110804021899,m:530,min:8,
   ph:'https://drive.google.com/drive/folders/1_r88UVksVrbjpDzBLNO4KLp9kyUt1eeV'}
 ];
+L.sort((a,b)=>a.m-b.m); // 번호 = 망미역에서 가까운 순
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const naver=a=>'https://map.naver.com/p/search/'+encodeURIComponent('부산 수영구 '+a);
 
